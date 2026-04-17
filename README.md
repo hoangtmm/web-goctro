@@ -75,16 +75,72 @@ lib/
 public/
 ```
 
-## Nội dung và dữ liệu
+## Kiến trúc API đã tích hợp
 
-- Dữ liệu mẫu đang nằm trong `lib/posts.ts`
-- Danh mục và bài viết hiện là dữ liệu tĩnh
-- Có thể mở rộng tiếp sang:
-  - block `Pros / Cons`
-  - giá tham khảo
-  - nút mua `Shopee`
-  - nút mua `TikTok Shop`
-  - disclosure cho affiliate link
+- Public API:
+  - `GET /api/categories`
+  - `GET /api/categories/{id}`
+  - `GET /api/categories/slug/{slug}`
+  - `GET /api/products`
+  - `GET /api/products/{id}`
+  - `GET /api/products/slug/{slug}`
+  - `GET /api/affiliate-links/{id}/redirect`
+- Admin API:
+  - `POST /api/admin-auth/login`
+  - `GET /api/admin-auth/me`
+  - `GET/POST/PUT/PATCH /api/admins...`
+  - `GET/POST/PUT/PATCH /api/admin/products...`
+  - `GET/POST/PUT/PATCH/DELETE /api/admin/products/{productId}/images...`
+  - `GET/POST/PUT/PATCH/DELETE /api/admin/products/{productId}/affiliate-links...`
+
+## Environment Variables
+
+Tạo file `.env.local`:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_BASE_URL=https://localhost:7132
+API_BASE_URL=https://localhost:7132
+```
+
+- Nếu không khai báo `NEXT_PUBLIC_API_BASE_URL`, frontend sẽ gọi API cùng origin (`/api/...`).
+
+## Chuẩn bị production
+
+- Thiết lập domain thật cho `NEXT_PUBLIC_SITE_URL`
+- Thiết lập API backend thật cho `API_BASE_URL`
+- Kiểm tra `robots.txt` và `sitemap.xml` đã sinh đúng domain production
+- Kiểm tra thẻ SEO: title, description, canonical, OpenGraph, Twitter Card
+- Đảm bảo route admin không index bởi máy tìm kiếm
+
+## Enum dùng chung FE
+
+- `platform`: `shopee`, `tiktok_shop`
+- `status`: `draft`, `published`, `archived`
+
+## Validate FE đã áp dụng
+
+- `affiliate_url`, `deep_link`, `image_url`, `thumbnail_url`: phải là absolute URL
+- `review_score`: từ `0` đến `10`
+- `display_order`, `sort_order`: không âm
+- Email admin đúng format, password tạo admin tối thiểu `6` ký tự
+
+## Luồng chính đã có
+
+- Public:
+  - Trang danh mục: `/danh-muc`
+  - Trang danh sách sản phẩm: `/blog`
+  - Trang chi tiết sản phẩm theo slug: `/blog/[slug]`
+  - Nút mua đi qua redirect endpoint để track click
+- Admin CMS:
+  - Login: `/admin/login`
+  - Products dashboard: `/admin`
+  - Product edit: `/admin/products/[id]/edit`
+  - Categories: `/admin/categories`
+  - Admin users: `/admin/admins`
+  - Product images: `/admin/products/[id]/images`
+  - Affiliate links: `/admin/products/[id]/affiliate-links`
 
 ## Ghi chú phát triển
 

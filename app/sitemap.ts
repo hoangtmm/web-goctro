@@ -1,15 +1,22 @@
 import type { MetadataRoute } from "next";
-import { posts } from "@/lib/posts";
+import { publicApi } from "@/lib/api/public-api";
+import { getSiteUrl } from "@/lib/seo";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://your-domain.com";
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = getSiteUrl();
+  let productUrls: MetadataRoute.Sitemap = [];
 
-  const postUrls = posts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  try {
+    const products = await publicApi.getProducts();
+    productUrls = products.map((product) => ({
+      url: `${baseUrl}/blog/${product.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+  } catch {
+    productUrls = [];
+  }
 
   return [
     {
@@ -24,6 +31,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
-    ...postUrls,
+    {
+      url: `${baseUrl}/danh-muc`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...productUrls,
   ];
 }

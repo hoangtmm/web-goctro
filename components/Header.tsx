@@ -1,49 +1,87 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const navItems = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/blog", label: "Bài viết" },
-  { href: "/danh-muc", label: "Danh mục" },
+  { href: "/", label: "Home" },
+  { href: "/#whats-trending", label: "What's Trending" },
+  { href: "/blog", label: "Tất cả sản phẩm" },
+  { href: "/blog", label: "More" },
 ];
 
 export default function Header() {
+  const [isCompact, setIsCompact] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const onScroll = () => {
+      setIsCompact(window.scrollY > 0);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   return (
-    <header className="border-b border-[var(--line)] bg-[var(--surface)]">
-      <div className="section-shell">
-        <div className="flex flex-col gap-4 py-5 md:flex-row md:items-center md:justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ink)] text-sm font-semibold text-white">
-              GT
-            </span>
-            <span>
-              <span className="block text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">
-                Affiliate Review
-              </span>
-              <span className="font-heading text-xl font-semibold text-[var(--ink)]">
-                Góc Trọ Tối Ưu
-              </span>
-            </span>
+    <header className="sticky top-0 z-50 bg-black text-white shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300">
+      <div className={`section-shell transition-all duration-300 ${isCompact ? "py-2" : "py-3"}`}>
+        <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
+          <form
+            className={`mx-auto flex w-full max-w-[280px] items-center rounded-full border border-neutral-400 bg-white text-neutral-800 transition-all duration-300 md:mx-0 ${isCompact ? "px-3 py-1" : "px-4 py-1.5"}`}
+            onSubmit={(event) => {
+              event.preventDefault();
+              const keyword = searchValue.trim();
+
+              if (!keyword) {
+                router.push("/blog");
+                return;
+              }
+
+              router.push(`/blog?q=${encodeURIComponent(keyword)}`);
+            }}
+          >
+            <input
+              type="search"
+              placeholder="Search..."
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-500"
+            />
+            <button type="submit" className="text-sm" aria-label="Search">
+              🔍
+            </button>
+          </form>
+
+          <Link
+            href="/"
+            className={`mx-auto text-center font-black leading-none tracking-tight transition-all duration-300 ${isCompact ? "text-3xl" : "text-5xl"}`}
+          >
+            TAPHOA76
           </Link>
 
-          <nav className="flex flex-wrap items-center gap-4 text-sm text-[var(--muted)]">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="transition hover:text-[var(--ink)]"
-              >
-                {item.label}
-              </Link>
-            ))}
-            <Link
-              href="/blog"
-              className="rounded-full border border-[var(--line-strong)] px-4 py-2 font-semibold text-[var(--ink)] transition hover:border-[var(--ink)]"
-            >
-              Review mới
-            </Link>
-          </nav>
+          <div className="hidden md:block" />
         </div>
+
+        <nav className={`overflow-x-auto pb-1 transition-all duration-300 ${isCompact ? "mt-2" : "mt-4"}`}>
+          <ul className={`flex min-w-max items-center justify-between font-semibold transition-all duration-300 ${isCompact ? "gap-6 text-xs" : "gap-8 text-sm"}`}>
+            {navItems.map((item) => (
+              <li key={item.label}>
+                <Link href={item.href} className="text-neutral-200 transition hover:text-white">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
+
     </header>
   );
 }

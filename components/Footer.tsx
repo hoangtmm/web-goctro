@@ -1,48 +1,53 @@
-import Link from "next/link";
-
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="pb-8 pt-16">
+    <footer className="mt-12 bg-black py-12 text-white">
       <div className="section-shell">
-        <div className="grid gap-8 rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-8 md:grid-cols-[1.3fr_0.8fr_0.9fr] md:px-8">
-          <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">
-              Shopee & TikTok Shop Affiliate
-            </p>
-            <h2 className="font-heading text-3xl font-semibold text-[var(--ink)]">
-              Giao diện tối giản để người đọc tập trung vào review và link mua.
-            </h2>
-            <p className="max-w-xl text-sm leading-7 text-[var(--muted)]">
-              Phù hợp cho website affiliate sản phẩm phòng trọ, góc học tập và
-              đồ gia dụng nhỏ gọn theo phong cách clean, trung tính và dễ tin cậy.
+        <div className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
+          <div>
+            <p className="text-5xl font-black tracking-tight">TAPHOA76</p>
+            <p className="mt-4 text-sm text-neutral-300">
+              ©{currentYear} TAPHOA76. All Rights Reserved.
             </p>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-              Điều hướng
-            </h3>
-            <div className="flex flex-col gap-2 text-sm">
-              <Link href="/blog" className="hover:text-[var(--accent)]">
-                Bài review
-              </Link>
-              <Link href="/danh-muc" className="hover:text-[var(--accent)]">
-                Danh mục
-              </Link>
-              <Link href="/" className="hover:text-[var(--accent)]">
-                Trang chủ
-              </Link>
-            </div>
-          </div>
+          <div className="flex items-center gap-3 md:gap-4">
+            <a
+              href="https://www.facebook.com/profile.php?id=61572099449333"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Facebook"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-500 text-neutral-200 transition hover:border-white hover:text-white"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+                <path d="M13.5 22v-8h2.7l.4-3h-3.1V9.1c0-.9.3-1.6 1.6-1.6h1.7V4.8c-.3 0-1.3-.1-2.4-.1-2.3 0-3.9 1.4-3.9 4V11H8v3h2.5v8h3z" />
+              </svg>
+            </a>
 
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-              Ghi chú
-            </h3>
-            <p className="text-sm leading-7 text-[var(--muted)]">
-              © 2026 Góc Trọ Tối Ưu. Một số liên kết có thể là affiliate link từ
-              Shopee hoặc TikTok Shop.
-            </p>
+            <a
+              href="https://www.tiktok.com/@hongtrnminh236?is_from_webapp=1&sender_device=pc"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="TikTok"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-500 text-neutral-200 transition hover:border-white hover:text-white"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+                <path d="M16.6 3c.2 1.7 1.2 3.1 2.7 3.9.8.4 1.7.7 2.7.7v3.1c-1.6 0-3.2-.5-4.5-1.4v5.7c0 3.4-2.8 6.2-6.2 6.2S5 18.4 5 15s2.8-6.2 6.2-6.2c.3 0 .5 0 .8.1v3.2c-.3-.1-.5-.2-.8-.2-1.7 0-3.1 1.4-3.1 3.1s1.4 3.1 3.1 3.1 3.1-1.4 3.1-3.1V3h2.3z" />
+              </svg>
+            </a>
+
+            <a
+              href="https://www.youtube.com/@LuLuMeo-06"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="YouTube"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-500 text-neutral-200 transition hover:border-white hover:text-white"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+                <path d="M23 12c0-2.2-.2-3.7-.5-4.5-.3-.9-1-1.6-1.9-1.9C19.8 5.3 18.2 5 12 5S4.2 5.3 3.4 5.6c-.9.3-1.6 1-1.9 1.9C1.2 8.3 1 9.8 1 12s.2 3.7.5 4.5c.3.9 1 1.6 1.9 1.9.8.3 2.4.6 8.6.6s7.8-.3 8.6-.6c.9-.3 1.6-1 1.9-1.9.3-.8.5-2.3.5-4.5zm-13 3.5v-7l6 3.5-6 3.5z" />
+              </svg>
+            </a>
           </div>
         </div>
       </div>

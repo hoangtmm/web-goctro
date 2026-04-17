@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro, Fraunces } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import AppFrame from "@/components/AppFrame";
+import { getSiteUrl } from "@/lib/seo";
 
 const bodyFont = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -17,7 +17,7 @@ const headingFont = Fraunces({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://your-domain.com"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "Góc Trọ Tối Ưu",
     template: "%s | Góc Trọ Tối Ưu",
@@ -32,10 +32,19 @@ export const metadata: Metadata = {
     title: "Góc Trọ Tối Ưu",
     description:
       "Review đồ cho phòng trọ, góc học tập, phụ kiện bàn học và đồ gia dụng nhỏ gọn.",
-    url: "https://your-domain.com",
+    url: getSiteUrl(),
     siteName: "Góc Trọ Tối Ưu",
     locale: "vi_VN",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Góc Trọ Tối Ưu",
+    description:
+      "Review đồ cho phòng trọ, góc học tập, phụ kiện bàn học và đồ gia dụng nhỏ gọn.",
+  },
+  alternates: {
+    canonical: "/",
   },
 };
 
@@ -50,9 +59,7 @@ export default function RootLayout({
       className={`${bodyFont.variable} ${headingFont.variable}`}
     >
       <body className="bg-[var(--bg)] text-[var(--ink)] antialiased">
-        <Header />
-        {children}
-        <Footer />
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );

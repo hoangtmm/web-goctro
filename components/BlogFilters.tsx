@@ -1,40 +1,46 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import type { Category, Post } from "@/lib/posts";
+import type { Category, ProductListItem } from "@/lib/api/types";
+import { PLATFORM_VALUES, PRODUCT_STATUS_VALUES } from "@/lib/api/types";
 
 type Props = {
-  posts: Post[];
+  products: ProductListItem[];
   categories: Category[];
   initialCategory?: string;
   initialQuery?: string;
+  featured?: boolean;
 };
 
 export default function BlogFilters({
-  posts,
+  products,
   categories,
   initialCategory = "tat-ca",
   initialQuery = "",
+  featured = false,
 }: Props) {
   const [query, setQuery] = useState(initialQuery);
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const activeCategory = initialCategory;
 
-  const categoryMap = new Map(categories.map((item) => [item.slug, item.label]));
+  const categoryMap = useMemo(
+    () => new Map(categories.map((item) => [String(item.id), item.name])),
+    [categories]
+  );
 
-  const filteredPosts = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     const keyword = query.trim().toLowerCase();
 
-    return posts.filter((post) => {
+    return products.filter((product) => {
       const matchCategory =
-        activeCategory === "tat-ca" || post.category === activeCategory;
+        activeCategory === "tat-ca" || String(product.category_id) === activeCategory;
 
       const searchableText = [
-        post.title,
-        post.description,
-        post.tags.join(" "),
-        categoryMap.get(post.category) ?? "",
+        product.title,
+        product.short_description,
+        product.platform,
+        product.status,
+        categoryMap.get(String(product.category_id)) ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -43,7 +49,7 @@ export default function BlogFilters({
 
       return matchCategory && matchQuery;
     });
-  }, [posts, query, activeCategory, categoryMap]);
+  }, [products, query, activeCategory, categoryMap]);
 
   return (
     <section className="mt-10">
@@ -51,7 +57,7 @@ export default function BlogFilters({
         <div className="grid gap-4 md:grid-cols-[1fr_auto]">
           <input
             type="text"
-            placeholder="Tìm bài viết, ví dụ: đèn học, bàn gấp..."
+            placeholder="Tìm sản phẩm, ví dụ: đèn học, bàn gấp..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
@@ -61,7 +67,6 @@ export default function BlogFilters({
             type="button"
             onClick={() => {
               setQuery("");
-              setActiveCategory("tat-ca");
             }}
             className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-medium"
           >
@@ -70,89 +75,93 @@ export default function BlogFilters({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setActiveCategory("tat-ca")}
+          <Link
+            href="/blog"
             className={`rounded-full px-4 py-2 text-sm font-medium ${
-              activeCategory === "tat-ca"
+              activeCategory === "tat-ca" && !featured
                 ? "bg-slate-900 text-white"
                 : "border border-slate-300 text-slate-700"
             }`}
           >
             Tất cả
-          </button>
+          </Link>
+
+          <Link
+            href="/blog?featured=1"
+            className={`rounded-full px-4 py-2 text-sm font-medium ${
+              featured
+                ? "bg-slate-900 text-white"
+                : "border border-slate-300 text-slate-700"
+            }`}
+          >
+            Featured
+          </Link>
 
           {categories.map((category) => (
-            <button
-              key={category.slug}
-              type="button"
-              onClick={() => setActiveCategory(category.slug)}
+            <Link
+              key={category.id}
+              href={`/blog?categoryId=${category.id}`}
               className={`rounded-full px-4 py-2 text-sm font-medium ${
-                activeCategory === category.slug
+                activeCategory === String(category.id)
                   ? "bg-slate-900 text-white"
                   : "border border-slate-300 text-slate-700"
               }`}
             >
-              {category.label}
-            </button>
+              {category.name}
+            </Link>
           ))}
         </div>
       </div>
 
       <div className="mt-8 flex items-center justify-between">
         <p className="text-sm text-slate-500">
-          Tìm thấy <span className="font-semibold">{filteredPosts.length}</span> bài viết
+          Tìm thấy <span className="font-semibold">{filteredProducts.length}</span> sản phẩm
         </p>
       </div>
 
-      {filteredPosts.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <div className="mt-6 rounded-3xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
-          Không tìm thấy bài viết phù hợp.
+          Không tìm thấy sản phẩm phù hợp.
         </div>
       ) : (
         <div className="mt-6 grid gap-8 md:grid-cols-2">
-          {filteredPosts.map((post) => (
+          {filteredProducts.map((product) => (
             <article
-              key={post.slug}
+              key={product.id}
               className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="relative h-56 w-full">
-                <Image
-                  src={post.image}
-                  alt={post.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              </div>
-
               <div className="p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  {categoryMap.get(post.category)}
+                  {categoryMap.get(String(product.category_id)) ?? "Danh mục"}
                 </p>
 
                 <h2 className="mt-3 text-2xl font-semibold text-slate-900">
-                  {post.title}
+                  {product.title}
                 </h2>
 
-                <p className="mt-3 text-slate-600">{post.description}</p>
+                <p className="mt-3 text-slate-600">
+                  {product.short_description || "Chưa có mô tả ngắn."}
+                </p>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {post.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
-                    >
-                      {tag}
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+                    Nền tảng: {PLATFORM_VALUES.includes(product.platform) ? product.platform : "khác"}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+                    Trạng thái: {PRODUCT_STATUS_VALUES.includes(product.status) ? product.status : "khác"}
+                  </span>
+                  {product.review_score !== null && product.review_score !== undefined ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+                      Điểm: {product.review_score}/10
                     </span>
-                  ))}
+                  ) : null}
                 </div>
 
                 <Link
-                  href={`/blog/${post.slug}`}
+                  href={`/blog/${product.slug}`}
                   className="mt-5 inline-block rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
                 >
-                  Đọc bài viết
+                  Xem review
                 </Link>
               </div>
             </article>
