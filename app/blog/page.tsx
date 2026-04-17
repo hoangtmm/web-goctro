@@ -13,8 +13,18 @@ const getProductPlatform = (product: ProductListItem) =>
   String(product.sourcePlatform || product.platform || "").toLowerCase();
 const getBuyButtonClassName = (product: ProductListItem) =>
   getProductPlatform(product).includes("tiktok")
-    ? "mt-4 !inline-flex w-fit self-start rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-white"
-    : "mt-4 !inline-flex w-fit self-start rounded-lg bg-[#fb8a5a] px-3 py-1.5 text-sm font-semibold text-white";
+    ? "mt-4 !inline-flex w-fit self-start rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-[#0f2f78] transition hover:brightness-95"
+    : "mt-4 !inline-flex w-fit self-start rounded-lg bg-[#fb8a5a] px-3 py-1.5 text-sm font-semibold text-[#0f2f78] transition hover:brightness-95";
+const getProductPrice = (product: ProductListItem) =>
+  product.salePrice ?? product.sale_price ?? product.price_reference;
+const formatMoney = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numericValue = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(numericValue) ? numericValue.toLocaleString("vi-VN") : String(value);
+};
 const normalizeKey = (value: string | number | null | undefined) =>
   String(value ?? "").trim().toLowerCase();
 
@@ -110,15 +120,15 @@ export default async function BlogPage({ searchParams }: Props) {
   const maxCategoryCount = Math.max(1, ...sortedCategoryItems.map((item) => item.count));
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#ffffff_0%,_#f4f9ff_45%,_#f8fbff_100%)] py-12">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6">
-        <section className="rounded-[2rem] border border-sky-100 bg-white px-7 py-8 shadow-[0_18px_36px_rgba(59,130,246,0.12)] sm:px-10">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#ffffff_0%,_#f4f9ff_45%,_#f8fbff_100%)] py-8 sm:py-10 lg:py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-5 sm:px-6">
+        <section className="rounded-[1.5rem] border border-sky-100 bg-white px-5 py-6 shadow-[0_18px_36px_rgba(59,130,246,0.12)] sm:rounded-[2rem] sm:px-7 sm:py-8 sm:px-10">
           <p className="text-xs font-extrabold uppercase tracking-[0.35em] text-slate-500">
             Sản phẩm
           </p>
 
           <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-            <h1 className="text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+            <h1 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl md:text-4xl lg:text-5xl">
               {initialQuery ? `Kết quả tìm kiếm cho "${initialQuery}"` : "Danh sách sản phẩm "}
             </h1>
 
@@ -128,7 +138,7 @@ export default async function BlogPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base sm:leading-7 lg:text-lg">
             {initialQuery
               ? `Tìm thấy ${queryFilteredProducts.length} sản phẩm khớp từ khóa "${initialQuery}".`
               : ""}
@@ -152,11 +162,11 @@ export default async function BlogPage({ searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="mx-auto mt-8 grid max-w-7xl gap-8 px-5 sm:px-6 lg:grid-cols-[320px_1fr]">
-        <aside className="h-fit rounded-[2rem] border border-sky-100 bg-white p-5 shadow-[0_14px_30px_rgba(59,130,246,0.12)] lg:sticky lg:top-24">
+      <div className="mx-auto mt-8 grid max-w-7xl gap-6 px-4 sm:px-5 sm:gap-8 sm:px-6 lg:grid-cols-[320px_1fr]">
+        <aside className="h-fit rounded-[1.5rem] border border-sky-100 bg-white p-4 shadow-[0_14px_30px_rgba(59,130,246,0.12)] sm:rounded-[2rem] sm:p-5 lg:sticky lg:top-24">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-extrabold uppercase tracking-[0.28em] text-slate-500">Danh mục</h2>
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+            <h2 className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-slate-500 sm:text-xs">Danh mục</h2>
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 sm:text-xs">
               {sortedCategoryItems.length} mục
             </span>
           </div>
@@ -233,29 +243,42 @@ export default async function BlogPage({ searchParams }: Props) {
           ) : null}
 
           {queryFilteredProducts.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 lg:gap-5">
               {queryFilteredProducts.map((product) => (
-                <article key={product.id} className="group flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-sky-100 bg-white p-4 shadow-[0_8px_22px_rgba(59,130,246,0.1)] transition hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(59,130,246,0.16)]">
+                <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
                   <Link href={`/blog/${product.id}`} className="group block">
-                    <div className="h-44 overflow-hidden rounded-2xl bg-sky-50">
+                    <div className="aspect-[4/3] overflow-hidden bg-[#f3f3f3]">
                       {getProductImage(product) ? (
-                        <img src={getProductImage(product) || ""} alt={getProductName(product)} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                        <img
+                          src={getProductImage(product) || ""}
+                          alt={getProductName(product)}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        />
                       ) : (
                         <div className="h-full w-full bg-gradient-to-br from-[#98d2cf] to-[#74a8d0]" />
                       )}
                     </div>
                   </Link>
 
-                  <div className="mt-3 flex flex-1 flex-col">
-                    <h3 className="line-clamp-2 min-h-[3.5rem] text-2xl font-black leading-tight text-slate-900">
+                  <div className="flex flex-1 flex-col p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 sm:text-xs">
+                      {product.category_name || "Sản phẩm"}
+                    </p>
+                    <h3 className="mt-2 line-clamp-2 min-h-[3rem] text-lg font-black leading-tight text-black sm:text-xl">
                       {getProductName(product)}
                     </h3>
-                    <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-6 text-slate-600">
+                    <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-6 text-neutral-600">
                       {getProductShortDescription(product)}
                     </p>
-                    <p className="mt-2 text-lg font-semibold text-slate-700">
-                      {product.price_reference || "-"}
-                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-end gap-2 text-sm font-semibold">
+                      {formatMoney(product.originalPrice ?? product.original_price) ? (
+                        <span className="text-neutral-500 line-through">
+                          {formatMoney(product.originalPrice ?? product.original_price)} đ
+                        </span>
+                      ) : null}
+                      <span className="text-[#2e37a7]">{formatMoney(getProductPrice(product)) || "-"} đ</span>
+                    </div>
 
                     {product.affiliateLink ? (
                       <a

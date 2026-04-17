@@ -67,7 +67,6 @@ export default function AdminLoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
                 className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-950"
-                placeholder="hoangtm06@gmail.com"
               />
             </label>
 
@@ -79,7 +78,6 @@ export default function AdminLoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
                 className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-950"
-                placeholder="String@123"
               />
             </label>
 

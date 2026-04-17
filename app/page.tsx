@@ -13,18 +13,27 @@ const getProductPlatform = (product: ProductListItem) =>
   String(product.sourcePlatform || product.platform || "").toLowerCase();
 const getBuyButtonClassName = (product: ProductListItem) =>
   getProductPlatform(product).includes("tiktok")
-    ? "mt-4 !inline-flex w-fit self-start rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-white"
-    : "mt-4 !inline-flex w-fit self-start rounded-lg bg-[#fb8a5a] px-3 py-1.5 text-sm font-semibold text-white";
+    ? "mt-4 !inline-flex w-fit self-start rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-[#0f2f78] transition hover:brightness-95"
+    : "mt-4 !inline-flex w-fit self-start rounded-lg bg-[#fb8a5a] px-3 py-1.5 text-sm font-semibold text-[#0f2f78] transition hover:brightness-95";
+
+const formatMoney = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numericValue = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(numericValue) ? numericValue.toLocaleString("vi-VN") : String(value);
+};
 
 export const metadata: Metadata = {
-  title: "Review sản phẩm phòng trọ chuẩn SEO",
+  title: "TapHoaDeal",
   description:
     "Trang tổng hợp review sản phẩm phòng trọ, góc học tập và đồ gia dụng nhỏ gọn với nội dung rõ ràng, dễ chọn mua.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Review sản phẩm phòng trọ chuẩn SEO",
+    title: "TapHoaDeal",
     description:
       "Trang tổng hợp review sản phẩm phòng trọ, góc học tập và đồ gia dụng nhỏ gọn với nội dung rõ ràng, dễ chọn mua.",
     url: toAbsoluteUrl("/"),
@@ -68,20 +77,20 @@ async function HomeContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd()) }}
       />
 
-      <section className="section-shell pt-4">
+      <section className="section-shell pt-4 sm:pt-6">
         <div className="border-b-4 border-[#db2f27] pb-2">
-          <h1 className="text-5xl font-black uppercase tracking-tight text-[#2e37a7]">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-[#2e37a7] sm:text-4xl lg:text-5xl">
             What&apos;s Trending
           </h1>
         </div>
 
         <div id="whats-trending" className="mt-8 scroll-mt-28">
-          <h2 className="text-2xl font-black uppercase tracking-tight text-[#2e37a7] sm:text-3xl">
+          <h2 className="text-xl font-black uppercase tracking-tight text-[#2e37a7] sm:text-2xl lg:text-3xl">
             Sản phẩm đề xuất
           </h2>
 
           {recommendedProducts.length > 0 ? (
-            <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 lg:gap-6">
               {recommendedProducts.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
                   <Link href={`/blog/${product.id}`} className="group block">
@@ -104,12 +113,23 @@ async function HomeContent() {
                     <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#2e37a7]">
                       {product.sourcePlatform || product.platform}
                     </p>
-                    <h3 className="mt-1 line-clamp-2 min-h-[3.5rem] text-xl font-black leading-tight text-black">
+                    <h3 className="mt-1 line-clamp-2 min-h-[3rem] text-lg font-black leading-tight text-black sm:text-xl">
                       {getProductName(product)}
                     </h3>
                     <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm text-neutral-600">
                       {getProductShortDescription(product)}
                     </p>
+
+                    <div className="mt-3 flex flex-wrap items-end gap-2 text-sm font-semibold">
+                      {formatMoney(product.originalPrice ?? product.original_price) ? (
+                        <span className="text-neutral-500 line-through">
+                          {formatMoney(product.originalPrice ?? product.original_price)} đ
+                        </span>
+                      ) : null}
+                      <span className="text-[#2e37a7]">
+                        {formatMoney(product.salePrice ?? product.sale_price ?? product.price_reference) || "-"} đ
+                      </span>
+                    </div>
 
                     {product.affiliateLink ? (
                       <a
@@ -141,12 +161,12 @@ async function HomeContent() {
         ) : null}
 
         <div className="mt-12">
-          <h2 className="text-2xl font-black uppercase tracking-tight text-[#2e37a7] sm:text-3xl">
+          <h2 className="text-xl font-black uppercase tracking-tight text-[#2e37a7] sm:text-2xl lg:text-3xl">
             Danh sách sản phẩm
           </h2>
 
           {products.length > 0 ? (
-            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               {products.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
                   <Link href={`/blog/${product.id}`} className="group block">
@@ -167,15 +187,23 @@ async function HomeContent() {
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
                       {product.category_name || "Sản phẩm"}
                     </p>
-                    <h3 className="mt-2 line-clamp-2 min-h-[3.5rem] text-2xl font-black leading-tight text-black">
+                    <h3 className="mt-2 line-clamp-2 min-h-[3rem] text-lg font-black leading-tight text-black sm:text-xl">
                       {getProductName(product)}
                     </h3>
                     <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm text-neutral-600">
                       {getProductShortDescription(product)}
                     </p>
-                    <p className="mt-3 text-lg font-semibold text-[#2e37a7]">
-                      {product.price_reference || "-"}
-                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-end gap-2 text-sm font-semibold">
+                      {formatMoney(product.originalPrice ?? product.original_price) ? (
+                        <span className="text-neutral-500 line-through">
+                          {formatMoney(product.originalPrice ?? product.original_price)} đ
+                        </span>
+                      ) : null}
+                      <span className="text-[#2e37a7]">
+                        {formatMoney(product.salePrice ?? product.sale_price ?? product.price_reference) || "-"} đ
+                      </span>
+                    </div>
 
                     {product.affiliateLink ? (
                       <a
