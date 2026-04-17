@@ -39,7 +39,7 @@ type Props = {
 };
 
 export const metadata: Metadata = {
-  title: "Danh sách sản phẩm review",
+  title: "Danh sách sản phẩm ",
   description:
     "Danh sách sản phẩm đã publish, mô tả ngắn, giá tham khảo để chọn lựa nhanh chóng.",
   alternates: {
@@ -102,7 +102,7 @@ export default async function BlogPage({ searchParams }: Props) {
     count: Number(category.productCount ?? category.product_count ?? 0),
   }));
 
-  const totalProductsCount = categoryItems.reduce((sum, category) => sum + category.count, 0);
+  const totalProductsCount = products.length;
 
   const sortedCategoryItems = categoryItems
     .slice()
@@ -119,7 +119,7 @@ export default async function BlogPage({ searchParams }: Props) {
 
           <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
             <h1 className="text-4xl font-black leading-tight text-slate-950 md:text-5xl">
-              {initialQuery ? `Kết quả tìm kiếm cho "${initialQuery}"` : "Danh sách sản phẩm review"}
+              {initialQuery ? `Kết quả tìm kiếm cho "${initialQuery}"` : "Danh sách sản phẩm "}
             </h1>
 
             <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-right">
@@ -131,10 +131,18 @@ export default async function BlogPage({ searchParams }: Props) {
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
             {initialQuery
               ? `Tìm thấy ${queryFilteredProducts.length} sản phẩm khớp từ khóa "${initialQuery}".`
-              : "Chọn danh mục ở cột trái để lọc sản phẩm theo nhu cầu. Danh sách bên phải cập nhật ngay theo danh mục bạn chọn."}
+              : ""}
           </p>
         </section>
       </div>
+
+      {errorMessage ? (
+        <div className="mx-auto mt-6 max-w-7xl px-5 sm:px-6">
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {errorMessage}
+          </div>
+        </div>
+      ) : null}
 
       {errorMessage ? (
         <div className="mx-auto mt-6 max-w-7xl px-5 sm:px-6">

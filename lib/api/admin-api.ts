@@ -12,7 +12,11 @@ import type {
   ProductRecommendation,
 } from "@/lib/api/types";
 
-const withAdminToken = <T>(path: string, init?: RequestInit & { body?: unknown }) => {
+type AdminRequestOptions = Omit<RequestInit, "body"> & {
+  body?: unknown;
+};
+
+const withAdminToken = <T>(path: string, init?: AdminRequestOptions) => {
   const token = getAccessToken();
   return apiRequest<T>(path, {
     ...init,
@@ -59,7 +63,7 @@ export const adminProductsApi = {
   ) => {
     const searchParams = new URLSearchParams();
 
-    searchParams.set("CategoryId", payload.categoryId);
+    searchParams.set("CategoryId", String(payload.categoryId));
     searchParams.set("Name", payload.name);
 
     if (payload.shortDescription) searchParams.set("ShortDescription", payload.shortDescription);
