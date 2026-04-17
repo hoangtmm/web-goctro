@@ -6,7 +6,7 @@ const getBackendBaseUrl = () => {
   const value =
     process.env.API_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
-    "https://localhost:7132";
+    "https://api.taphoadeal.com";
 
   return value.replace(/\/$/, "");
 };

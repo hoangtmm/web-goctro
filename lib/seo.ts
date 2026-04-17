@@ -1,6 +1,6 @@
 import type { ProductDetail, ProductImage } from "@/lib/api/types";
 
-const FALLBACK_SITE_URL = "https://goctrotoiuu.vn";
+const FALLBACK_SITE_URL = "https://api.taphoadeal.com";
 
 export function getSiteUrl() {
   const raw =

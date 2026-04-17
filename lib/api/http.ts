@@ -15,7 +15,7 @@ const ensureBaseUrl = () => {
     return `https://${vercelUrl.replace(/\/$/, "")}`;
   }
 
-  return "http://localhost:3000";
+  return "https://api.taphoadeal.com";
 };
 
 export class HttpError extends Error {

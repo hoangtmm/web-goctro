@@ -45,7 +45,7 @@ npm run dev
 Mở trình duyệt tại:
 
 ```txt
-http://localhost:3000
+https://api.taphoadeal.com
 ```
 
 ## Scripts
@@ -98,10 +98,10 @@ public/
 Tạo file `.env.local`:
 
 ```bash
-NEXT_PUBLIC_SITE_URL=https://your-domain.com
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_BASE_URL=https://localhost:7132
-API_BASE_URL=https://localhost:7132
+NEXT_PUBLIC_SITE_URL=https://api.taphoadeal.com
+NEXT_PUBLIC_APP_URL=https://api.taphoadeal.com
+NEXT_PUBLIC_API_BASE_URL=https://api.taphoadeal.com
+API_BASE_URL=https://api.taphoadeal.com
 ```
 
 - Nếu không khai báo `NEXT_PUBLIC_API_BASE_URL`, frontend sẽ gọi API cùng origin (`/api/...`).
