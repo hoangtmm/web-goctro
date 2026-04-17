@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Fraunces } from "next/font/google";
 import "./globals.css";
 import AppFrame from "@/components/AppFrame";
 import { getSiteUrl } from "@/lib/seo";
+import hotdealsIcon from "./hotdeals.jpg";
 
 const bodyFont = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -45,6 +46,11 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "/",
+  },
+  icons: {
+    icon: [{ url: hotdealsIcon.src, type: "image/jpeg" }],
+    shortcut: [{ url: hotdealsIcon.src, type: "image/jpeg" }],
+    apple: [{ url: hotdealsIcon.src, type: "image/jpeg" }],
   },
 };
 
