@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { adminCategoriesApi, adminProductsApi } from "@/lib/api/admin-api";
 import { mapHttpErrorMessage } from "@/lib/api/error-messages";
 import type { Category, Platform, ProductListItem } from "@/lib/api/types";
@@ -20,8 +19,47 @@ type PendingAction = {
   onConfirm: () => Promise<void> | void;
 };
 
+type EditProductFormState = {
+  id: string;
+  categoryId: string;
+  name: string;
+  shortDescription: string;
+  description: string;
+  originalPrice: string;
+  salePrice: string;
+  affiliateLink: string;
+  sourcePlatform: Platform;
+  imageUrl: string;
+  imagePublicId: string;
+  isRecommended: boolean;
+  isFeatured: boolean;
+  isActive: boolean;
+};
+
+type UpdateResultModal = {
+  type: "success" | "error";
+  title: string;
+  message: string;
+};
+
+const defaultEditProductFormState: EditProductFormState = {
+  id: "",
+  categoryId: "",
+  name: "",
+  shortDescription: "",
+  description: "",
+  originalPrice: "0",
+  salePrice: "0",
+  affiliateLink: "",
+  sourcePlatform: "shopee",
+  imageUrl: "",
+  imagePublicId: "",
+  isRecommended: false,
+  isFeatured: false,
+  isActive: true,
+};
+
 export default function AdminProductsPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -40,6 +78,14 @@ export default function AdminProductsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [editProductModalOpen, setEditProductModalOpen] = useState(false);
+  const [editProductFormState, setEditProductFormState] = useState<EditProductFormState>(
+    defaultEditProductFormState
+  );
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreviewUrl, setEditImagePreviewUrl] = useState("");
+  const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
+  const [updateResultModal, setUpdateResultModal] = useState<UpdateResultModal | null>(null);
 
   const load = async () => {
     try {
@@ -73,6 +119,42 @@ export default function AdminProductsPage() {
       URL.revokeObjectURL(previewUrl);
     };
   }, [imageFile]);
+
+  useEffect(() => {
+    if (!editImageFile) {
+      setEditImagePreviewUrl("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(editImageFile);
+    setEditImagePreviewUrl(previewUrl);
+
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [editImageFile]);
+
+  const openEditProductModal = (product: ProductListItem) => {
+    setEditProductFormState({
+      id: String(product.id || ""),
+      categoryId: String(product.category_id || ""),
+      name: product.name || product.title || "",
+      shortDescription: product.shortDescription || product.short_description || "",
+      description: product.description || "",
+      originalPrice: String(product.originalPrice ?? product.original_price ?? 0),
+      salePrice: String(product.salePrice ?? product.sale_price ?? product.price_reference ?? 0),
+      affiliateLink: product.affiliateLink || "",
+      sourcePlatform: (product.sourcePlatform as Platform) || product.platform || "shopee",
+      imageUrl: product.imageUrl || product.image_url || "",
+      imagePublicId: product.imagePublicId || "",
+      isRecommended: Boolean(product.isRecommended),
+      isFeatured: Boolean(product.isFeatured ?? product.is_featured),
+      isActive: Boolean(product.isActive ?? product.is_active),
+    });
+    setEditImageFile(null);
+    setEditImagePreviewUrl("");
+    setEditProductModalOpen(true);
+  };
 
   return (
     <section>
@@ -128,6 +210,332 @@ export default function AdminProductsPage() {
                 className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
               >
                 {pendingAction.confirmLabel || "Có"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editProductModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6">
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-auto rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Chỉnh sửa sản phẩm</p>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">#{editProductFormState.id} - {editProductFormState.name || "Sản phẩm"}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditProductModalOpen(false);
+                  setEditProductFormState(defaultEditProductFormState);
+                  setEditImageFile(null);
+                  setEditImagePreviewUrl("");
+                }}
+                className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <form
+              className="mt-5 grid gap-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+
+                const nextName = normalizeText(editProductFormState.name);
+                const nextCategoryId = Number(editProductFormState.categoryId);
+                const parsedOriginalPrice = Number(editProductFormState.originalPrice);
+                const parsedSalePrice = Number(editProductFormState.salePrice);
+
+                if (!nextName) {
+                  setUpdateResultModal({
+                    type: "error",
+                    title: "Cập nhật thất bại",
+                    message: "Vui lòng nhập tên sản phẩm.",
+                  });
+                  return;
+                }
+
+                if (!editProductFormState.categoryId || !Number.isInteger(nextCategoryId) || nextCategoryId <= 0) {
+                  setUpdateResultModal({
+                    type: "error",
+                    title: "Cập nhật thất bại",
+                    message: "Vui lòng chọn danh mục hợp lệ.",
+                  });
+                  return;
+                }
+
+                if (!isNonNegative(parsedOriginalPrice) || !isNonNegative(parsedSalePrice)) {
+                  setUpdateResultModal({
+                    type: "error",
+                    title: "Cập nhật thất bại",
+                    message: "Giá gốc và giá sale không được âm.",
+                  });
+                  return;
+                }
+
+                try {
+                  setIsUpdatingProduct(true);
+                  await adminProductsApi.update(editProductFormState.id, {
+                    categoryId: nextCategoryId,
+                    name: nextName,
+                    shortDescription: normalizeText(editProductFormState.shortDescription) || undefined,
+                    description: normalizeText(editProductFormState.description) || undefined,
+                    originalPrice: parsedOriginalPrice,
+                    salePrice: parsedSalePrice,
+                    affiliateLink: normalizeText(editProductFormState.affiliateLink) || undefined,
+                    sourcePlatform: editProductFormState.sourcePlatform,
+                    imageUrl: normalizeText(editProductFormState.imageUrl) || undefined,
+                    imagePublicId: normalizeText(editProductFormState.imagePublicId) || undefined,
+                    isRecommended: editProductFormState.isRecommended,
+                    isFeatured: editProductFormState.isFeatured,
+                    isActive: editProductFormState.isActive,
+                    image: editImageFile,
+                  });
+
+                  setEditProductModalOpen(false);
+                  setEditProductFormState(defaultEditProductFormState);
+                  setEditImageFile(null);
+                  setEditImagePreviewUrl("");
+                  setSuccessMessage("Đã cập nhật sản phẩm.");
+                  setErrorMessage(null);
+                  setUpdateResultModal({
+                    type: "success",
+                    title: "Cập nhật thành công",
+                    message: "Thông tin sản phẩm đã được cập nhật.",
+                  });
+                  await load();
+                } catch (error) {
+                  const message = mapHttpErrorMessage(error);
+                  setErrorMessage(message);
+                  setUpdateResultModal({
+                    type: "error",
+                    title: "Cập nhật thất bại",
+                    message,
+                  });
+                } finally {
+                  setIsUpdatingProduct(false);
+                }
+              }}
+            >
+              <input
+                placeholder="Tên sản phẩm"
+                value={editProductFormState.name}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, name: event.target.value }))
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              />
+
+              <textarea
+                placeholder="Mô tả ngắn"
+                value={editProductFormState.shortDescription}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, shortDescription: event.target.value }))
+                }
+                rows={3}
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              />
+
+              <textarea
+                placeholder="Mô tả chi tiết"
+                value={editProductFormState.description}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, description: event.target.value }))
+                }
+                rows={4}
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              />
+
+              <select
+                value={editProductFormState.categoryId}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, categoryId: event.target.value }))
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              >
+                <option value="">Chọn danh mục</option>
+                {categories.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={editProductFormState.sourcePlatform}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, sourcePlatform: event.target.value as Platform }))
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              >
+                <option value="shopee">shopee</option>
+                <option value="tiktok_shop">tiktok_shop</option>
+              </select>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Giá gốc"
+                  value={editProductFormState.originalPrice}
+                  onChange={(event) =>
+                    setEditProductFormState((state) => ({ ...state, originalPrice: event.target.value }))
+                  }
+                  className="rounded-xl border border-slate-300 px-4 py-3"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Giá sale"
+                  value={editProductFormState.salePrice}
+                  onChange={(event) =>
+                    setEditProductFormState((state) => ({ ...state, salePrice: event.target.value }))
+                  }
+                  className="rounded-xl border border-slate-300 px-4 py-3"
+                />
+              </div>
+
+              <input
+                placeholder="Affiliate link"
+                value={editProductFormState.affiliateLink}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, affiliateLink: event.target.value }))
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              />
+
+              <input
+                placeholder="Image URL"
+                value={editProductFormState.imageUrl}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, imageUrl: event.target.value }))
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              />
+
+              <div className="grid gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setEditImageFile(event.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-white"
+                />
+
+                {editImagePreviewUrl || editProductFormState.imageUrl ? (
+                  <div className="grid gap-3 md:grid-cols-[180px_1fr]">
+                    <img
+                      src={editImagePreviewUrl || editProductFormState.imageUrl}
+                      alt="Preview upload"
+                      className="h-44 w-full rounded-2xl object-cover"
+                    />
+                    <div className="space-y-2 text-sm text-slate-700">
+                      <p className="font-semibold">
+                        {editImagePreviewUrl
+                          ? "Ảnh mới sẽ được gửi khi bấm cập nhật sản phẩm."
+                          : "Đây là ảnh hiện tại của sản phẩm."}
+                      </p>
+                      <p>
+                        {editImagePreviewUrl
+                          ? "Nếu muốn giữ ảnh cũ, hãy xóa lựa chọn file trước khi cập nhật."
+                          : "Bạn có thể chọn file ảnh mới để thay thế ảnh hiện tại."}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <input
+                placeholder="Image Public ID"
+                value={editProductFormState.imagePublicId}
+                onChange={(event) =>
+                  setEditProductFormState((state) => ({ ...state, imagePublicId: event.target.value }))
+                }
+                className="rounded-xl border border-slate-300 px-4 py-3"
+              />
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editProductFormState.isRecommended}
+                    onChange={(event) =>
+                      setEditProductFormState((state) => ({ ...state, isRecommended: event.target.checked }))
+                    }
+                  />
+                  Recommended
+                </label>
+
+                <label className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editProductFormState.isFeatured}
+                    onChange={(event) =>
+                      setEditProductFormState((state) => ({ ...state, isFeatured: event.target.checked }))
+                    }
+                  />
+                  Featured
+                </label>
+
+                <label className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editProductFormState.isActive}
+                    onChange={(event) =>
+                      setEditProductFormState((state) => ({ ...state, isActive: event.target.checked }))
+                    }
+                  />
+                  Active
+                </label>
+              </div>
+
+              <div className="mt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditProductModalOpen(false);
+                    setEditProductFormState(defaultEditProductFormState);
+                    setEditImageFile(null);
+                    setEditImagePreviewUrl("");
+                  }}
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingProduct}
+                  className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {isUpdatingProduct ? "Đang cập nhật..." : "Cập nhật"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {updateResultModal ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 px-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <p
+              className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+                updateResultModal.type === "success" ? "text-emerald-600" : "text-rose-600"
+              }`}
+            >
+              {updateResultModal.type === "success" ? "Thành công" : "Thất bại"}
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">{updateResultModal.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{updateResultModal.message}</p>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setUpdateResultModal(null)}
+                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                Đóng
               </button>
             </div>
           </div>
@@ -370,15 +778,8 @@ export default function AdminProductsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={async () => {
-                      setPendingAction({
-                        title: "Chỉnh sửa sản phẩm",
-                        message: `Bạn muốn mở trang chỉnh sửa cho \"${getProductName(product)}\" không?`,
-                        confirmLabel: "Có",
-                        onConfirm: () => {
-                          router.push(`/admin/products/${productId}/edit`);
-                        },
-                      });
+                    onClick={() => {
+                      openEditProductModal(product);
                     }}
                     className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
                   >

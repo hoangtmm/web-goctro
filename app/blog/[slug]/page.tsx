@@ -1,269 +1,324 @@
 /* eslint-disable @next/next/no-img-element */
 
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { publicApi } from "@/lib/api/public-api";
 import { HttpError } from "@/lib/api/http";
-import { buildProductReviewJsonLd, getPrimaryProductImage, sortProductImages, toAbsoluteUrl } from "@/lib/seo";
-import ScrollToTop from "@/components/ScrollToTop";
+import type { BlogPostDetail, ProductDetail, ProductListItem } from "@/lib/api/types";
+import { getPrimaryProductImage, toAbsoluteUrl } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const dynamic = "force-dynamic";
+type RelatedProduct = {
+  postProductId: string;
+  productId: string;
+  product: ProductDetail | ProductListItem | null;
+  position: number | null;
+};
 
-function isNumericId(value: string) {
-  return /^\d+$/.test(value.trim());
-}
+const getPostTitle = (post: BlogPostDetail) => post.seoTitle || post.seo_title || post.title || "Blog";
+const getPostDescription = (post: BlogPostDetail) =>
+  post.seoDescription || post.seo_description || post.shortDescription || post.short_description || "";
+const getPostImage = (post: BlogPostDetail) => post.thumbnailUrl || post.thumbnail_url || "";
+const getPostContent = (post: BlogPostDetail) => post.content || "";
+const getPostType = (post: BlogPostDetail) => String(post.type || "blog").toUpperCase();
 
-async function resolveProduct(identifier: string) {
-  if (isNumericId(identifier)) {
-    try {
-      return await publicApi.getProductById(identifier);
-    } catch (error) {
-      if (error instanceof HttpError && error.status !== 404) {
-        throw error;
+const formatDate = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+};
+
+const resolveRelatedProducts = async (post: BlogPostDetail): Promise<RelatedProduct[]> => {
+  const source = [
+    ...(Array.isArray(post.postProducts) ? post.postProducts : []),
+    ...(Array.isArray(post.products) ? post.products : []),
+  ];
+
+  const seen = new Set<string>();
+  const mapped = await Promise.all(
+    source.map(async (item) => {
+      const product = (item?.product ?? null) as ProductDetail | ProductListItem | null;
+      const productId = String(item?.productId ?? item?.product_id ?? product?.id ?? "").trim();
+      if (!productId) {
+        return null;
       }
-    }
+
+      let resolvedProduct = product;
+      if (!resolvedProduct) {
+        try {
+          resolvedProduct = await publicApi.getProductById(productId);
+        } catch {
+          resolvedProduct = null;
+        }
+      }
+
+      const postProductId = String(item?.postProductId ?? item?.post_product_id ?? item?.id ?? "").trim();
+      const positionValue = item?.position ?? item?.sortOrder ?? item?.sort_order ?? null;
+      const position = positionValue === null || positionValue === undefined ? null : Number(positionValue);
+      const key = `${postProductId}::${productId}`;
+
+      if (seen.has(key)) {
+        return null;
+      }
+      seen.add(key);
+
+      return {
+        postProductId,
+        productId,
+        product: resolvedProduct,
+        position: Number.isFinite(position) ? position : null,
+      } satisfies RelatedProduct;
+    })
+  );
+
+  return mapped
+    .filter((item): item is RelatedProduct => Boolean(item))
+    .sort((left, right) => {
+      const leftPosition = left.position;
+      const rightPosition = right.position;
+
+      if (leftPosition === null && rightPosition === null) {
+        return 0;
+      }
+      if (leftPosition === null) {
+        return 1;
+      }
+      if (rightPosition === null) {
+        return -1;
+      }
+
+      return leftPosition - rightPosition;
+    });
+};
+
+const getProductName = (product: ProductDetail | ProductListItem | null) => product?.name || product?.title || "Sản phẩm";
+const getProductImage = (product: ProductDetail | ProductListItem | null) =>
+  product?.imageUrl || product?.image_url || getPrimaryProductImage((product as ProductDetail | null)?.images)?.image_url || "";
+const getProductPrice = (product: ProductDetail | ProductListItem | null) =>
+  product?.salePrice ?? product?.sale_price ?? product?.price_reference ?? product?.originalPrice ?? product?.original_price ?? "";
+const getProductOldPrice = (product: ProductDetail | ProductListItem | null) => product?.originalPrice ?? product?.original_price ?? "";
+const formatMoney = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") {
+    return "";
   }
 
-  try {
-    return await publicApi.getProductBySlug(identifier);
-  } catch (error) {
-    if (!(error instanceof HttpError) || error.status !== 404) {
-      throw error;
-    }
-
-    const products = await publicApi.getProducts();
-    const matched = products.find((item) => item.slug === identifier || String(item.id) === identifier);
-
-    if (!matched) {
-      throw error;
-    }
-
-    return publicApi.getProductById(matched.id);
+  const numericValue = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
+  if (!Number.isFinite(numericValue)) {
+    return String(value);
   }
-}
+
+  return new Intl.NumberFormat("vi-VN").format(numericValue);
+};
+const getProductDiscountPercent = (product: ProductDetail | ProductListItem | null) => {
+  const oldPrice = Number(getProductOldPrice(product));
+  const salePrice = Number(getProductPrice(product));
+
+  if (!Number.isFinite(oldPrice) || !Number.isFinite(salePrice) || oldPrice <= 0 || salePrice <= 0 || salePrice >= oldPrice) {
+    return null;
+  }
+
+  return Math.round((1 - salePrice / oldPrice) * 100);
+};
+const getProductLink = (product: ProductDetail | ProductListItem | null) => {
+  if (!product) {
+    return "";
+  }
+
+  return `/product/${product.slug || product.id}`;
+};
+
+const getProductAffiliateUrl = (product: ProductDetail | ProductListItem | null) => {
+  if (!product) {
+    return "";
+  }
+
+  if (product.affiliateLink) {
+    return product.affiliateLink;
+  }
+
+  const affiliateLinks = (product as ProductDetail).affiliate_links;
+  const firstAffiliate = Array.isArray(affiliateLinks) ? affiliateLinks[0] : null;
+  return firstAffiliate?.affiliate_url || "";
+};
+
+const toHtml = (content: string) => content || "<p>Nội dung đang được cập nhật.</p>";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  let product = null;
 
   try {
-    product = await resolveProduct(slug);
-  } catch {
-    product = null;
-  }
+    const post = await publicApi.getPostBySlug(slug);
+    const title = getPostTitle(post);
+    const description = getPostDescription(post);
+    const image = getPostImage(post);
 
-  if (!product) {
     return {
-      title: "Không tìm thấy sản phẩm",
+      title,
+      description,
+      alternates: {
+        canonical: `/blog/${post.slug}`,
+      },
+      openGraph: {
+        title,
+        description,
+        url: toAbsoluteUrl(`/blog/${post.slug}`),
+        type: "article",
+        images: image ? [image] : [],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+      },
+    };
+  } catch {
+    return {
+      title: "Không tìm thấy bài viết",
     };
   }
-
-  const displayTitle = product.title || product.name || "Chi tiết sản phẩm";
-  const displayDescription =
-    product.short_description || product.shortDescription || product.description || "Chi tiết sản phẩm";
-
-  return {
-    title: displayTitle,
-    description: displayDescription,
-    alternates: {
-      canonical: `/blog/${product.slug}`,
-    },
-    openGraph: {
-      title: displayTitle,
-      description: displayDescription,
-      url: toAbsoluteUrl(`/blog/${product.slug}`),
-      type: "article",
-      images: product.imageUrl ? [product.imageUrl] : product.images?.[0]?.image_url ? [product.images[0].image_url] : [],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: displayTitle,
-      description: displayDescription,
-    },
-  };
 }
 
 export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params;
-  let product;
+  let post: BlogPostDetail;
 
   try {
-    product = await resolveProduct(slug);
+    post = await publicApi.getPostBySlug(slug);
   } catch (error) {
     if (error instanceof HttpError && error.status === 404) {
       return notFound();
     }
-    throw error;
+
+    return notFound();
   }
 
-  if (!product) return notFound();
-
-  const displayTitle = product.title || product.name || "Chi tiết sản phẩm";
-  const displayDescription =
-    product.short_description || product.shortDescription || product.description || "Chưa có mô tả ngắn.";
-
-  const normalizedImages = Array.isArray(product.images) ? product.images : [];
-  const sortedImages = sortProductImages(normalizedImages);
-  const coverImage = getPrimaryProductImage(normalizedImages);
-  const galleryImages = sortedImages.filter((image) => image.id !== coverImage?.id);
-  const activeAffiliateLinks = (product.affiliate_links ?? [])
-    .filter((link) => link.is_active)
-    .sort((left, right) => Number(right.is_primary) - Number(left.is_primary));
-
-  const shopeeLink = activeAffiliateLinks.find((link) => link.platform === "shopee") ?? null;
-  const tiktokLink = activeAffiliateLinks.find((link) => link.platform === "tiktok_shop") ?? null;
-  const fallbackAffiliateUrl = product.affiliateLink?.trim() || null;
-
-  const coverUrl =
-    coverImage?.thumbnail_url ||
-    coverImage?.image_url ||
-    product.imageUrl ||
-    null;
-
-  const isActive = product.isActive ?? product.is_active ?? null;
-  const isFeatured = product.isFeatured ?? product.is_featured ?? null;
-  const isRecommended = product.isRecommended ?? null;
-
-  const toNumericValue = (value: number | string | null | undefined) => {
-    if (value === null || value === undefined || value === "") {
-      return null;
-    }
-
-    if (typeof value === "number") {
-      return Number.isFinite(value) ? value : null;
-    }
-
-    const normalized = value.replace(/[^\d.-]/g, "");
-    const numericValue = Number(normalized);
-    return Number.isFinite(numericValue) ? numericValue : null;
-  };
-
-  const formatMoney = (value: number | string | null | undefined) => {
-    if (value === null || value === undefined || value === "") {
-      return null;
-    }
-
-    const numericValue = typeof value === "number" ? value : Number(value);
-    return Number.isFinite(numericValue) ? numericValue.toLocaleString("vi-VN") : String(value);
-  };
-
-  const salePriceRaw = product.salePrice ?? product.sale_price ?? product.price_reference;
-  const originalPriceRaw = product.originalPrice ?? product.original_price;
-
-  const salePriceNumber = toNumericValue(salePriceRaw);
-  const originalPriceNumber = toNumericValue(originalPriceRaw);
-
-  const salePrice = formatMoney(salePriceRaw);
-  const originalPrice = formatMoney(product.originalPrice);
-
-  const hasDiscount =
-    originalPriceNumber !== null &&
-    salePriceNumber !== null &&
-    originalPriceNumber > salePriceNumber;
-  const discountPercent = hasDiscount
-    ? Math.round(((originalPriceNumber - salePriceNumber) / originalPriceNumber) * 100)
-    : null;
-
-  const primaryAffiliateLink = shopeeLink ?? tiktokLink;
-  const primaryAffiliateHref = primaryAffiliateLink
-    ? publicApi.getAffiliateRedirectUrl(primaryAffiliateLink.id)
-    : fallbackAffiliateUrl;
-  const primaryAffiliateLabel = primaryAffiliateLink
-    ? primaryAffiliateLink.platform === "shopee"
-      ? "SHOPEE"
-      : "TIKTOK"
-    : "MUA NGAY";
+  const title = getPostTitle(post);
+  const description = getPostDescription(post);
+  const image = getPostImage(post);
+  const content = getPostContent(post);
+  const relatedProducts = await resolveRelatedProducts(post);
+  const publishedDate = formatDate(post.publishedAt || post.published_at || post.createdAt || post.created_at);
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-5 sm:py-8 lg:py-12">
-      <ScrollToTop />
-      <article className="space-y-10">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(buildProductReviewJsonLd(product)),
-          }}
-        />
-
-        <section className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm sm:rounded-[2rem]">
-            <div className="relative aspect-[4/3] bg-slate-100 lg:aspect-[4/3]">
-              {coverUrl ? (
-                <img
-                  src={coverUrl}
-                  alt={coverImage?.alt_text || product.title}
-                  className="h-full w-full object-contain object-center"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-200 via-white to-slate-100 text-sm uppercase tracking-[0.2em] text-slate-500">
-                  No cover image
-                </div>
-              )}
-            </div>
-
-            {galleryImages.length > 0 ? (
-              <div className="grid gap-3 border-t border-slate-200 bg-slate-50 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
-                {galleryImages.slice(0, 6).map((image) => (
-                  <img
-                    key={image.id}
-                    src={image.thumbnail_url || image.image_url}
-                    alt={image.alt_text || product.title}
-                    className="h-28 w-full rounded-2xl object-cover sm:h-32 lg:h-36"
-                  />
-                ))}
-              </div>
-            ) : null}
+    <main className="min-h-screen bg-white py-6 sm:py-8 lg:py-10">
+      <article className="mx-auto max-w-4xl px-4 sm:px-6">
+        <header className="border-b border-slate-200 pb-6">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <Link href="/blog" className="underline decoration-slate-300 underline-offset-4 hover:text-slate-700">
+              Blog
+            </Link>
+            <span>/</span>
+            <span>{getPostType(post)}</span>
           </div>
 
-          <aside className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5 lg:p-6">
-            <h1 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl lg:text-4xl">
-              {displayTitle}
-            </h1>
+          <h1 className="mt-4 text-4xl font-black leading-[1.05] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+            {title}
+          </h1>
 
-            <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">
-              {displayDescription}
-            </p>
+          {description ? <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-700">{description}</p> : null}
 
-            {discountPercent ? (
-              <p className="mt-5 inline-flex rounded-md bg-emerald-100 px-3 py-1 text-lg font-semibold text-emerald-700 sm:text-2xl">
-                Now {discountPercent}% Off
-              </p>
-            ) : null}
+        </header>
 
-            <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap">
-              <div className="inline-flex overflow-hidden rounded-md border border-[#2523a6] bg-white text-[#111827]">
-                <div className="px-3 py-3 text-base font-black sm:px-4 sm:text-lg">
-                  {hasDiscount ? (
-                    <>
-                      <span className="mr-2 text-xs font-bold text-slate-500 line-through sm:text-sm">
-                        {originalPriceNumber?.toLocaleString("vi-VN")} đ
-                      </span>
-                      <span>{salePriceNumber?.toLocaleString("vi-VN")} đ</span>
-                    </>
-                  ) : (
-                    <span>{salePrice || originalPrice ? `${salePrice ?? originalPrice} đ` : "-"}</span>
-                  )}
-                </div>
-                {primaryAffiliateHref ? (
-                  <a
-                    href={primaryAffiliateHref}
-                    rel="sponsored"
-                    target="_blank"
-                    className="inline-flex min-h-12 items-center justify-center bg-[#2523a6] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#1f1d89] sm:px-6 sm:text-base"
-                  >
-                    {primaryAffiliateLabel}
-                  </a>
-                ) : null}
-              </div>
-            </div>
+        {image ? (
+          <div className="mt-6 mx-auto max-w-3xl overflow-hidden rounded-[24px] border border-slate-200 bg-slate-100">
+            <img
+              src={image}
+              alt={title}
+              className="h-[240px] w-full object-cover sm:h-[320px] lg:h-[400px]"
+            />
+          </div>
+        ) : null}
 
-          </aside>
+        <section className="prose prose-slate mt-8 max-w-none prose-headings:font-black prose-h2:mt-10 prose-h2:text-3xl prose-p:leading-8 prose-img:mx-auto prose-img:max-h-[420px] prose-img:w-auto prose-img:max-w-full prose-img:rounded-2xl">
+          <div dangerouslySetInnerHTML={{ __html: toHtml(content) }} />
         </section>
 
+        {relatedProducts.length > 0 ? (
+          <section className="mt-12 border-t border-slate-200 pt-8">
+            <div className="mt-5 grid gap-5">
+              {relatedProducts.map((item) => {
+                const product = item.product;
+                const productImage = getProductImage(product);
+                const productTitle = getProductName(product);
+                const productPrice = getProductPrice(product);
+                const oldPrice = getProductOldPrice(product);
+                const discountPercent = getProductDiscountPercent(product);
+                const link = getProductLink(product);
+                const buyUrl = getProductAffiliateUrl(product) || link;
+
+                return (
+                  <article
+                    key={`${item.postProductId}-${item.productId}`}
+                    className="grid overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.06)] md:grid-cols-2"
+                  >
+                    <div className="bg-slate-100 md:min-h-[360px]">
+                      {productImage ? (
+                        <img src={productImage} alt={productTitle} className="h-full w-full object-contain p-4 md:p-6" />
+                      ) : (
+                        <div className="flex min-h-[260px] items-center justify-center bg-slate-100 text-xs uppercase tracking-[0.18em] text-slate-400 md:min-h-[360px]">
+                          No image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex h-full flex-col justify-center gap-5 p-5 md:p-7 lg:p-8">
+                      <div className="space-y-4">
+                        <h3 className="text-3xl font-black leading-tight text-slate-950 md:text-4xl">
+                          {productTitle}
+                        </h3>
+
+                        {product?.shortDescription || product?.short_description ? (
+                          <p className="max-w-2xl text-base leading-7 text-slate-600">
+                            {product.shortDescription || product.short_description}
+                          </p>
+                        ) : null}
+
+                        {discountPercent ? (
+                          <span className="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5 text-base font-semibold text-emerald-700">
+                            Now {discountPercent}% Off
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="grid grid-cols-[minmax(0,1fr)_160px] overflow-hidden rounded-2xl border border-[#2f36b9]">
+                        <div className="flex min-w-0 items-center justify-center gap-2 whitespace-nowrap bg-white px-4 py-3 text-sm font-black text-slate-900 sm:text-base">
+                          {oldPrice ? <span className="text-slate-400 line-through">{formatMoney(oldPrice)} đ</span> : null}
+                          {productPrice ? <span className="text-slate-900">{formatMoney(productPrice)} đ</span> : null}
+                        </div>
+
+                        {buyUrl ? (
+                          <a
+                            href={buyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className="inline-flex items-center justify-center bg-[#2f36b9] px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:brightness-95 sm:text-base"
+                          >
+                            Mua ngay
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
       </article>
     </main>
   );

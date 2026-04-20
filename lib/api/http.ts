@@ -1,21 +1,19 @@
 import type { ApiErrorPayload } from "@/lib/api/types";
 
+const FALLBACK_API_BASE_URL = "https://api.taphoadeal.com";
+
 const ensureBaseUrl = () => {
+  // Browser should call Next.js proxy (/api/...) to avoid CORS issues.
   if (typeof window !== "undefined") {
     return "";
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (appUrl) {
-    return appUrl.replace(/\/$/, "");
-  }
+  const configuredBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    FALLBACK_API_BASE_URL;
 
-  const vercelUrl = process.env.VERCEL_URL?.trim();
-  if (vercelUrl) {
-    return `https://${vercelUrl.replace(/\/$/, "")}`;
-  }
-
-  return "https://api.taphoadeal.com";
+  return configuredBaseUrl.replace(/\/$/, "");
 };
 
 export class HttpError extends Error {

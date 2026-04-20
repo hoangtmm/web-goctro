@@ -5,17 +5,32 @@ import { getSiteUrl } from "@/lib/seo";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
   let productUrls: MetadataRoute.Sitemap = [];
+  let blogUrls: MetadataRoute.Sitemap = [];
 
   try {
     const products = await publicApi.getProducts();
     productUrls = products.map((product) => ({
-      url: `${baseUrl}/blog/${product.slug}`,
+      url: `${baseUrl}/product/${product.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
   } catch {
     productUrls = [];
+  }
+
+  try {
+    const posts = await publicApi.getPosts();
+    blogUrls = posts
+      .filter((post) => Boolean(post.slug))
+      .map((post) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      }));
+  } catch {
+    blogUrls = [];
   }
 
   return [
@@ -26,10 +41,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/blog`,
+      url: `${baseUrl}/product`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/danh-muc`,
@@ -38,5 +59,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     ...productUrls,
+    ...blogUrls,
   ];
 }

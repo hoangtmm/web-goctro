@@ -73,7 +73,7 @@ export function getPrimaryProductImage(images: ProductImage[] | unknown) {
 }
 
 export function buildProductReviewJsonLd(product: ProductDetail) {
-  const productUrl = toAbsoluteUrl(`/blog/${product.slug}`);
+  const productUrl = toAbsoluteUrl(`/product/${product.slug}`);
   const imageUrl = getPrimaryProductImage(product.images)?.image_url || undefined;
   const description = product.short_description || product.shortDescription || product.content || product.description || "";
   const priceValue = product.salePrice ?? product.price_reference ?? product.originalPrice ?? null;

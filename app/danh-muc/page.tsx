@@ -68,7 +68,7 @@ export default async function CategoryPage() {
                 <p className="mt-4 text-sm text-slate-500">{count} sản phẩm</p>
 
                 <Link
-                  href={`/blog?category=${category.id}`}
+                  href={`/product?category=${category.id}`}
                   className="mt-5 inline-block rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
                 >
                   Xem danh mục

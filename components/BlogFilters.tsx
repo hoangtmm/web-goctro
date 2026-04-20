@@ -76,7 +76,7 @@ export default function BlogFilters({
 
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
-            href="/blog"
+            href="/product"
             className={`rounded-full px-4 py-2 text-sm font-medium ${
               activeCategory === "tat-ca" && !featured
                 ? "bg-slate-900 text-white"
@@ -87,7 +87,7 @@ export default function BlogFilters({
           </Link>
 
           <Link
-            href="/blog?featured=1"
+            href="/product?featured=1"
             className={`rounded-full px-4 py-2 text-sm font-medium ${
               featured
                 ? "bg-slate-900 text-white"
@@ -100,7 +100,7 @@ export default function BlogFilters({
           {categories.map((category) => (
             <Link
               key={category.id}
-              href={`/blog?categoryId=${category.id}`}
+              href={`/product?categoryId=${category.id}`}
               className={`rounded-full px-4 py-2 text-sm font-medium ${
                 activeCategory === String(category.id)
                   ? "bg-slate-900 text-white"
@@ -158,7 +158,7 @@ export default function BlogFilters({
                 </div>
 
                 <Link
-                  href={`/blog/${product.slug}`}
+                  href={`/product/${product.slug}`}
                   className="mt-5 inline-block rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
                 >
                   Xem review

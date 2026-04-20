@@ -5,6 +5,15 @@ import { mapHttpErrorMessage } from "@/lib/api/error-messages";
 import type { ProductListItem, ProductRecommendation } from "@/lib/api/types";
 import { buildOrganizationJsonLd, buildWebsiteJsonLd, toAbsoluteUrl } from "@/lib/seo";
 
+type HomePageProps = {
+  searchParams: Promise<{
+    recPage?: string | string[];
+    productPage?: string | string[];
+  }>;
+};
+
+const ITEMS_PER_PAGE = 4;
+
 const getProductName = (product: ProductListItem) => product.name || product.title;
 const getProductShortDescription = (product: ProductListItem) =>
   product.shortDescription || product.short_description || "Chưa có mô tả";
@@ -41,11 +50,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
-  return <HomeContent />;
+const toPositivePage = (value?: string | string[]) => {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+};
+
+const buildPageHref = (recPage: number, productPage: number) => {
+  const params = new URLSearchParams();
+  params.set("recPage", String(recPage));
+  params.set("productPage", String(productPage));
+  return `/?${params.toString()}`;
+};
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  return <HomeContent recPage={toPositivePage(params.recPage)} productPage={toPositivePage(params.productPage)} />;
 }
 
-async function HomeContent() {
+async function HomeContent({ recPage, productPage }: { recPage: number; productPage: number }) {
   let recommendations: ProductRecommendation[] = [];
   let products: ProductListItem[] = [];
   let errorMessage: string | null = null;
@@ -65,6 +88,21 @@ async function HomeContent() {
     .sort((left, right) => left.position - right.position)
     .map((recommendation) => productMap.get(String(recommendation.productId)))
     .filter((product): product is ProductListItem => Boolean(product));
+
+  const recommendedTotalPages = Math.max(1, Math.ceil(recommendedProducts.length / ITEMS_PER_PAGE));
+  const productsTotalPages = Math.max(1, Math.ceil(products.length / ITEMS_PER_PAGE));
+
+  const safeRecPage = Math.min(recPage, recommendedTotalPages);
+  const safeProductPage = Math.min(productPage, productsTotalPages);
+
+  const pagedRecommendedProducts = recommendedProducts.slice(
+    (safeRecPage - 1) * ITEMS_PER_PAGE,
+    safeRecPage * ITEMS_PER_PAGE
+  );
+  const pagedProducts = products.slice(
+    (safeProductPage - 1) * ITEMS_PER_PAGE,
+    safeProductPage * ITEMS_PER_PAGE
+  );
 
   return (
     <main className="bg-white pb-16">
@@ -91,9 +129,9 @@ async function HomeContent() {
 
           {recommendedProducts.length > 0 ? (
             <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 lg:gap-6">
-              {recommendedProducts.map((product) => (
+              {pagedRecommendedProducts.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
-                  <Link href={`/blog/${product.id}`} className="group block">
+                  <Link href={`/product/${product.slug || product.id}`} className="group block">
                     <div className="aspect-[1/1] overflow-hidden bg-[#f3f3f3]">
                       {getProductImage(product) ? (
                         <img
@@ -152,6 +190,38 @@ async function HomeContent() {
               Chưa có sản phẩm đề xuất active.
             </div>
           )}
+
+          {recommendedProducts.length > 0 ? (
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <Link
+                href={buildPageHref(Math.max(1, safeRecPage - 1), safeProductPage)}
+                scroll={false}
+                aria-disabled={safeRecPage <= 1}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+                  safeRecPage <= 1
+                    ? "pointer-events-none border-slate-200 text-slate-400"
+                    : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Trước
+              </Link>
+              <span className="text-sm font-semibold text-slate-700">
+                Trang {safeRecPage}/{recommendedTotalPages}
+              </span>
+              <Link
+                href={buildPageHref(Math.min(recommendedTotalPages, safeRecPage + 1), safeProductPage)}
+                scroll={false}
+                aria-disabled={safeRecPage >= recommendedTotalPages}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+                  safeRecPage >= recommendedTotalPages
+                    ? "pointer-events-none border-slate-200 text-slate-400"
+                    : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Sau
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         {errorMessage ? (
@@ -167,9 +237,9 @@ async function HomeContent() {
 
           {products.length > 0 ? (
             <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-6">
-              {products.map((product) => (
+              {pagedProducts.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
-                  <Link href={`/blog/${product.id}`} className="group block">
+                  <Link href={`/product/${product.slug || product.id}`} className="group block">
                     <div className="aspect-[4/3] overflow-hidden bg-[#f3f3f3]">
                       {getProductImage(product) ? (
                         <img
@@ -226,6 +296,38 @@ async function HomeContent() {
               Chưa có sản phẩm nào.
             </div>
           )}
+
+          {products.length > 0 ? (
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <Link
+                href={buildPageHref(safeRecPage, Math.max(1, safeProductPage - 1))}
+                scroll={false}
+                aria-disabled={safeProductPage <= 1}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+                  safeProductPage <= 1
+                    ? "pointer-events-none border-slate-200 text-slate-400"
+                    : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Trước
+              </Link>
+              <span className="text-sm font-semibold text-slate-700">
+                Trang {safeProductPage}/{productsTotalPages}
+              </span>
+              <Link
+                href={buildPageHref(safeRecPage, Math.min(productsTotalPages, safeProductPage + 1))}
+                scroll={false}
+                aria-disabled={safeProductPage >= productsTotalPages}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+                  safeProductPage >= productsTotalPages
+                    ? "pointer-events-none border-slate-200 text-slate-400"
+                    : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Sau
+              </Link>
+            </div>
+          ) : null}
         </div>
       </section>
     </main>

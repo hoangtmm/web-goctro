@@ -1,11 +1,15 @@
 import { apiRequest } from "@/lib/api/http";
 import { getAccessToken } from "@/lib/auth/session";
 import type {
+  AdminPostWritePayload,
   AdminLoginResponse,
   AdminProductWritePayload,
   AdminUser,
   AffiliateLink,
+  BlogPostDetail,
+  BlogPostListItem,
   Category,
+  Tag,
   ProductDetail,
   ProductImage,
   ProductListItem,
@@ -53,6 +57,10 @@ export const adminCategoriesApi = {
   remove: (id: string | number) => withAdminToken<void>(`/api/categories/${id}`, { method: "DELETE" }),
 };
 
+export const adminTagsApi = {
+  list: () => withAdminToken<Tag[]>("/api/tags"),
+};
+
 export const adminProductsApi = {
   list: () => withAdminToken<ProductListItem[]>("/api/products"),
   getById: (id: string | number) => withAdminToken<ProductDetail>(`/api/products/${id}`),
@@ -84,8 +92,37 @@ export const adminProductsApi = {
       body: formData,
     });
   },
-  update: (id: string | number, payload: Partial<AdminProductWritePayload>) =>
-    withAdminToken<ProductDetail>(`/api/products/${id}`, { method: "PUT", body: payload }),
+  update: (
+    id: string | number,
+    payload: Partial<AdminProductWritePayload> & {
+      image?: File | null;
+    }
+  ) => {
+    if (!payload.image) {
+      return withAdminToken<ProductDetail>(`/api/products/${id}`, { method: "PUT", body: payload });
+    }
+
+    const searchParams = new URLSearchParams();
+
+    if (payload.categoryId !== undefined) searchParams.set("CategoryId", String(payload.categoryId));
+    if (payload.name !== undefined) searchParams.set("Name", payload.name);
+    if (payload.shortDescription !== undefined) searchParams.set("ShortDescription", payload.shortDescription || "");
+    if (payload.description !== undefined) searchParams.set("Description", payload.description || "");
+    if (payload.originalPrice !== undefined) searchParams.set("OriginalPrice", String(payload.originalPrice));
+    if (payload.salePrice !== undefined) searchParams.set("SalePrice", String(payload.salePrice));
+    if (payload.affiliateLink !== undefined) searchParams.set("AffiliateLink", payload.affiliateLink || "");
+    if (payload.sourcePlatform !== undefined) searchParams.set("SourcePlatform", payload.sourcePlatform);
+    if (payload.isRecommended !== undefined) searchParams.set("IsRecommended", String(payload.isRecommended));
+    if (payload.isFeatured !== undefined) searchParams.set("IsFeatured", String(payload.isFeatured));
+    if (payload.isActive !== undefined) searchParams.set("IsActive", String(payload.isActive));
+
+    const formData = new FormData();
+    formData.append("Image", payload.image);
+
+    const query = searchParams.toString();
+    const path = query ? `/api/products/${id}?${query}` : `/api/products/${id}`;
+    return withAdminToken<ProductDetail>(path, { method: "PUT", body: formData });
+  },
   publish: (id: string | number) =>
     withAdminToken<void>(`/api/products/${id}/publish`, { method: "PATCH" }),
   archive: (id: string | number) =>
@@ -181,4 +218,68 @@ export const adminProductRecommendationsApi = {
     }),
   remove: (id: string | number) =>
     withAdminToken<void>(`/api/product-recommendations/${id}`, { method: "DELETE" }),
+};
+
+export const adminPostsApi = {
+  list: () => withAdminToken<BlogPostListItem[]>("/api/posts"),
+  getById: (id: string | number) => withAdminToken<BlogPostDetail>(`/api/posts/${id}`),
+  create: (
+    payload: Omit<AdminPostWritePayload, "thumbnailUrl" | "thumbnailPublicId"> & {
+      thumbnail?: File;
+      image: File;
+    }
+  ) => {
+    const formData = new FormData();
+    formData.append("Title", payload.title);
+    if (payload.shortDescription !== undefined) formData.append("ShortDescription", payload.shortDescription || "");
+    if (payload.content !== undefined) formData.append("Content", payload.content || "");
+    if (payload.type !== undefined) formData.append("Type", payload.type);
+    if (payload.status !== undefined) formData.append("Status", payload.status);
+    if (payload.isFeatured !== undefined) formData.append("IsFeatured", String(payload.isFeatured));
+    if (payload.seoTitle !== undefined) formData.append("SeoTitle", payload.seoTitle || "");
+    if (payload.seoDescription !== undefined) formData.append("SeoDescription", payload.seoDescription || "");
+    if (payload.publishedAt !== undefined) formData.append("PublishedAt", payload.publishedAt || "");
+
+    const thumbnail = payload.thumbnail ?? payload.image;
+    formData.append("Thumbnail", thumbnail);
+
+    return withAdminToken<BlogPostDetail>("/api/posts", {
+      method: "POST",
+      body: formData,
+    });
+  },
+  update: (
+    id: string | number,
+    payload: Partial<Omit<AdminPostWritePayload, "thumbnailUrl" | "thumbnailPublicId">> & {
+      thumbnail?: File | null;
+      image?: File | null;
+    }
+  ) => {
+    const formData = new FormData();
+    if (payload.title !== undefined) formData.append("Title", payload.title);
+    if (payload.shortDescription !== undefined) formData.append("ShortDescription", payload.shortDescription || "");
+    if (payload.content !== undefined) formData.append("Content", payload.content || "");
+    if (payload.type !== undefined) formData.append("Type", payload.type);
+    if (payload.status !== undefined) formData.append("Status", payload.status);
+    if (payload.isFeatured !== undefined) formData.append("IsFeatured", String(payload.isFeatured));
+    if (payload.seoTitle !== undefined) formData.append("SeoTitle", payload.seoTitle || "");
+    if (payload.seoDescription !== undefined) formData.append("SeoDescription", payload.seoDescription || "");
+    if (payload.publishedAt !== undefined) formData.append("PublishedAt", payload.publishedAt || "");
+
+    const thumbnail = payload.thumbnail ?? payload.image;
+    if (thumbnail) {
+      formData.append("Thumbnail", thumbnail);
+    }
+
+    return withAdminToken<BlogPostDetail>(`/api/posts/${id}`, { method: "PUT", body: formData });
+  },
+  remove: (id: string | number) => withAdminToken<void>(`/api/posts/${id}`, { method: "DELETE" }),
+  addProduct: (postId: string | number, payload: { productId: string | number; position?: number }) =>
+    withAdminToken<void>(`/api/posts/${postId}/products`, { method: "POST", body: payload }),
+  removeProduct: (postProductId: string | number) =>
+    withAdminToken<void>(`/api/posts/post-products/${postProductId}`, { method: "DELETE" }),
+  addTag: (postId: string | number, tagId: string | number) =>
+    withAdminToken<void>(`/api/posts/${postId}/tags/${tagId}`, { method: "POST" }),
+  removeTag: (postId: string | number, tagId: string | number) =>
+    withAdminToken<void>(`/api/posts/${postId}/tags/${tagId}`, { method: "DELETE" }),
 };

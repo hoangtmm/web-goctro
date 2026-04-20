@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from "react";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/#whats-trending", label: "What's Trending" },
-  { href: "/blog", label: "Tất cả sản phẩm" },
+  { href: "/product", label: "Sản phẩm" },
+  { href: "/blog", label: "Blog" },
 ];
 
 const moreItems = [
@@ -98,11 +99,11 @@ export default function Header() {
               const keyword = searchValue.trim();
 
               if (!keyword) {
-                router.push("/blog");
+                router.push("/product");
                 return;
               }
 
-              router.push(`/blog?q=${encodeURIComponent(keyword)}`);
+              router.push(`/product?q=${encodeURIComponent(keyword)}`);
             }}
           >
             <input

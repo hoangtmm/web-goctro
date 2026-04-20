@@ -4,6 +4,12 @@ export type Platform = (typeof PLATFORM_VALUES)[number];
 export const PRODUCT_STATUS_VALUES = ["draft", "published", "archived"] as const;
 export type ProductStatus = (typeof PRODUCT_STATUS_VALUES)[number];
 
+export const POST_STATUS_VALUES = ["draft", "published", "archived"] as const;
+export type PostStatus = (typeof POST_STATUS_VALUES)[number];
+
+export const POST_TYPE_VALUES = ["blog", "review", "news", "comparison", "guide"] as const;
+export type PostType = (typeof POST_TYPE_VALUES)[number];
+
 export type Category = {
   id: string;
   name: string;
@@ -13,6 +19,13 @@ export type Category = {
   product_count?: number;
   created_at?: string;
   updated_at?: string;
+};
+
+export type Tag = {
+  id: string | number;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
 };
 
 export type ProductListItem = {
@@ -99,6 +112,70 @@ export type ProductRecommendation = {
   createdAt?: string;
 };
 
+export type BlogPostListItem = {
+  id: string | number;
+  slug: string;
+  title: string;
+  shortDescription?: string | null;
+  short_description?: string | null;
+  thumbnailUrl?: string | null;
+  thumbnail_url?: string | null;
+  thumbnailPublicId?: string | null;
+  thumbnail_public_id?: string | null;
+  type?: string | null;
+  status?: string | null;
+  isFeatured?: boolean;
+  is_featured?: boolean;
+  publishedAt?: string | null;
+  published_at?: string | null;
+  createdAt?: string | null;
+  created_at?: string | null;
+  updatedAt?: string | null;
+  updated_at?: string | null;
+};
+
+export type BlogPostDetail = BlogPostListItem & {
+  content?: string | null;
+  seoTitle?: string | null;
+  seo_title?: string | null;
+  seoDescription?: string | null;
+  seo_description?: string | null;
+  postProducts?: Array<{
+    id?: string | number;
+    postProductId?: string | number;
+    post_product_id?: string | number;
+    productId?: string | number;
+    product_id?: string | number;
+    position?: number | null;
+    sortOrder?: number | null;
+    sort_order?: number | null;
+    product?: ProductListItem | null;
+    productName?: string | null;
+    product_name?: string | null;
+  }>;
+  products?: Array<{
+    id?: string | number;
+    postProductId?: string | number;
+    post_product_id?: string | number;
+    productId?: string | number;
+    product_id?: string | number;
+    position?: number | null;
+    sortOrder?: number | null;
+    sort_order?: number | null;
+    product?: ProductListItem | null;
+    productName?: string | null;
+    product_name?: string | null;
+  }>;
+  tags?: Array<{
+    id?: string | number;
+    tagId?: string | number;
+    tag_id?: string | number;
+    name?: string | null;
+    tagName?: string | null;
+    tag_name?: string | null;
+  }>;
+};
+
 export type AdminProductWritePayload = {
   categoryId: string | number;
   name: string;
@@ -116,6 +193,20 @@ export type AdminProductWritePayload = {
   isActive?: boolean;
   reviewScore?: number;
   displayOrder?: number;
+};
+
+export type AdminPostWritePayload = {
+  title: string;
+  shortDescription?: string;
+  content?: string;
+  thumbnailUrl?: string;
+  thumbnailPublicId?: string;
+  type?: PostType | string;
+  status?: PostStatus | string;
+  isFeatured?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+  publishedAt?: string;
 };
 
 

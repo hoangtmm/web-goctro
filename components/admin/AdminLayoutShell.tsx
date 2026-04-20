@@ -12,6 +12,7 @@ type Props = {
 
 const navItems = [
   { href: "/admin", label: "Sản phẩm" },
+  { href: "/admin/blog", label: "Blog" },
   { href: "/admin/categories", label: "Danh mục" },
   { href: "/admin/product-recommendations", label: "Đề xuất" },
 ];
