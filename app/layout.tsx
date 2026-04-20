@@ -64,6 +64,13 @@ export default function RootLayout({
       lang="vi"
       className={`${bodyFont.variable} ${headingFont.variable}`}
     >
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9948916314422728"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="bg-[var(--bg)] text-[var(--ink)] antialiased">
         <AppFrame>{children}</AppFrame>
       </body>
