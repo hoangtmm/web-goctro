@@ -243,7 +243,7 @@ export default async function BlogPage({ searchParams }: Props) {
           ) : null}
 
           {queryFilteredProducts.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 lg:gap-5">
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 lg:gap-5">
               {queryFilteredProducts.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
                   <Link href={`/blog/${product.id}`} className="group block">
@@ -260,14 +260,14 @@ export default async function BlogPage({ searchParams }: Props) {
                     </div>
                   </Link>
 
-                  <div className="flex flex-1 flex-col p-4">
+                  <div className="flex flex-1 flex-col p-2.5 sm:p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 sm:text-xs">
                       {product.category_name || "Sản phẩm"}
                     </p>
-                    <h3 className="mt-2 line-clamp-2 min-h-[3rem] text-lg font-black leading-tight text-black sm:text-xl">
+                    <h3 className="mt-2 line-clamp-2 min-h-[2.4rem] text-sm font-black leading-tight text-black sm:min-h-[3rem] sm:text-xl">
                       {getProductName(product)}
                     </h3>
-                    <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-6 text-neutral-600">
+                    <p className="mt-2 line-clamp-2 min-h-[2.1rem] text-xs leading-5 text-neutral-600 sm:min-h-[2.5rem] sm:text-sm sm:leading-6">
                       {getProductShortDescription(product)}
                     </p>
 

@@ -90,7 +90,7 @@ async function HomeContent() {
           </h2>
 
           {recommendedProducts.length > 0 ? (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 lg:gap-6">
+            <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 lg:gap-6">
               {recommendedProducts.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
                   <Link href={`/blog/${product.id}`} className="group block">
@@ -109,14 +109,14 @@ async function HomeContent() {
                     </div>
                   </Link>
 
-                  <div className="flex flex-1 flex-col p-3">
+                  <div className="flex flex-1 flex-col p-2.5 sm:p-3">
                     <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#2e37a7]">
                       {product.sourcePlatform || product.platform}
                     </p>
-                    <h3 className="mt-1 line-clamp-2 min-h-[3rem] text-lg font-black leading-tight text-black sm:text-xl">
+                    <h3 className="mt-1 line-clamp-2 min-h-[2.4rem] text-sm font-black leading-tight text-black sm:min-h-[3rem] sm:text-xl">
                       {getProductName(product)}
                     </h3>
-                    <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm text-neutral-600">
+                    <p className="mt-2 line-clamp-2 min-h-[2.1rem] text-xs text-neutral-600 sm:min-h-[2.5rem] sm:text-sm">
                       {getProductShortDescription(product)}
                     </p>
 
@@ -166,7 +166,7 @@ async function HomeContent() {
           </h2>
 
           {products.length > 0 ? (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-6">
               {products.map((product) => (
                 <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_1px_0_#ddd]">
                   <Link href={`/blog/${product.id}`} className="group block">
@@ -183,14 +183,14 @@ async function HomeContent() {
                     </div>
                   </Link>
 
-                  <div className="flex flex-1 flex-col p-4">
+                  <div className="flex flex-1 flex-col p-2.5 sm:p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
                       {product.category_name || "Sản phẩm"}
                     </p>
-                    <h3 className="mt-2 line-clamp-2 min-h-[3rem] text-lg font-black leading-tight text-black sm:text-xl">
+                    <h3 className="mt-2 line-clamp-2 min-h-[2.4rem] text-sm font-black leading-tight text-black sm:min-h-[3rem] sm:text-xl">
                       {getProductName(product)}
                     </h3>
-                    <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm text-neutral-600">
+                    <p className="mt-2 line-clamp-2 min-h-[2.1rem] text-xs text-neutral-600 sm:min-h-[2.5rem] sm:text-sm">
                       {getProductShortDescription(product)}
                     </p>
 
